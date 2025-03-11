@@ -1,0 +1,98 @@
+# Import necessary libraries
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+import numpy as np
+import matplotlib.pyplot as plt
+import time
+
+# Load the MNIST dataset
+(x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
+
+# Normalize the pixel values to [0,1]
+x_train, x_test = x_train / 255.0, x_test / 255.0
+
+# Reshape input images for CNN (adding a channel dimension)
+x_train_cnn = x_train.reshape(-1, 28, 28, 1)
+x_test_cnn = x_test.reshape(-1, 28, 28, 1)
+
+# Convert labels to one-hot encoding
+y_train = keras.utils.to_categorical(y_train, 10)
+y_test = keras.utils.to_categorical(y_test, 10)
+
+# Define ANN Model
+ann_model = keras.Sequential([
+    layers.Flatten(input_shape=(28, 28)),  # Flatten images
+    layers.Dense(128, activation='relu'),
+    layers.Dense(64, activation='relu'),
+    layers.Dense(10, activation='softmax')  # Output layer
+])
+
+# Compile ANN model
+ann_model.compile(optimizer='adam',
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
+
+# Define CNN Model
+cnn_model = keras.Sequential([
+    layers.Conv2D(32, (3,3), activation='relu', input_shape=(28,28,1)),
+    layers.MaxPooling2D((2,2)),
+    
+    layers.Conv2D(64, (3,3), activation='relu'),
+    layers.MaxPooling2D((2,2)),
+
+    layers.Flatten(),
+    layers.Dense(128, activation='relu'),
+    layers.Dense(10, activation='softmax')  # Output layer
+])
+
+# Compile CNN model
+cnn_model.compile(optimizer='adam',
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
+
+# Train ANN and measure time
+start_time_ann = time.time()
+ann_history = ann_model.fit(x_train, y_train, epochs=10, batch_size=32, validation_data=(x_test, y_test), verbose=2)
+end_time_ann = time.time()
+ann_time = end_time_ann - start_time_ann  # Total training time
+
+# Train CNN and measure time
+start_time_cnn = time.time()
+cnn_history = cnn_model.fit(x_train_cnn, y_train, epochs=10, batch_size=32, validation_data=(x_test_cnn, y_test), verbose=2)
+end_time_cnn = time.time()
+cnn_time = end_time_cnn - start_time_cnn  # Total training time
+
+# Evaluate ANN Model
+ann_loss, ann_acc = ann_model.evaluate(x_test, y_test, verbose=0)
+
+# Evaluate CNN Model
+cnn_loss, cnn_acc = cnn_model.evaluate(x_test_cnn, y_test, verbose=0)
+
+# Print comparison results
+print(f"ANN Test Accuracy: {ann_acc:.4f}, ANN Loss: {ann_loss:.4f}, Time Taken: {ann_time:.2f} sec")
+print(f"CNN Test Accuracy: {cnn_acc:.4f}, CNN Loss: {cnn_loss:.4f}, Time Taken: {cnn_time:.2f} sec")
+
+# Plot Training & Validation Accuracy
+plt.figure(figsize=(10,5))
+plt.plot(ann_history.history['accuracy'], label='ANN Train Accuracy')
+plt.plot(ann_history.history['val_accuracy'], label='ANN Test Accuracy')
+plt.plot(cnn_history.history['accuracy'], label='CNN Train Accuracy')
+plt.plot(cnn_history.history['val_accuracy'], label='CNN Test Accuracy')
+plt.title("Training & Validation Accuracy")
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+plt.legend()
+plt.show()
+
+# Plot Training & Validation Loss
+plt.figure(figsize=(10,5))
+plt.plot(ann_history.history['loss'], label='ANN Train Loss')
+plt.plot(ann_history.history['val_loss'], label='ANN Test Loss')
+plt.plot(cnn_history.history['loss'], label='CNN Train Loss')
+plt.plot(cnn_history.history['val_loss'], label='CNN Test Loss')
+plt.title("Training & Validation Loss")
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+plt.legend()
+plt.show()
